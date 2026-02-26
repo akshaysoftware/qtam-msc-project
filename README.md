@@ -14,20 +14,20 @@ The specific goals are:
 
 ### Problem formulation
 
-Given a graph \(G=(V,E)\), MaxCut asks for a bit assignment \(z \in \{0,1\}^{|V|}\) that maximises:
-\[
-C(z) = \sum_{(i,j)\in E} z_i \oplus z_j
-\]
-where \(\oplus\) is XOR.
+Given a graph `G=(V,E)`, MaxCut asks for a bit assignment `z in {0,1}^|V|` that maximises:
 
-Here, \(G\) is `C8` with edges:
+`C(z) = sum over edges (i,j) in E of XOR(z_i, z_j)`
+
+where `XOR` is exclusive-or.
+
+Here, `G` is `C8` with edges:
 `(0,1), (1,2), (2,3), (3,4), (4,5), (5,6), (6,7), (7,0)`.
 
 ### QAOA ansatz used in this project
 
 We use QAOA with one layer (`p=1`) following Farhi et al. [1]:
 
-1. Prepare \(|+\rangle^{\otimes 8}\) using Hadamard gates.
+1. Prepare `|+>^8` using Hadamard gates.
 2. Apply the cost layer for each graph edge using:
    `CX(i,j) -> RZ(-gamma) on j -> CX(i,j)`.
 3. Apply the mixer layer on each qubit using:
@@ -35,29 +35,26 @@ We use QAOA with one layer (`p=1`) following Farhi et al. [1]:
 4. Measure in the computational basis to obtain samples.
 
 This is exactly what both implementations do:
-- Bloch: [`c8_maxcut_qaoa_p1.bloch`]
-- Python/Qiskit single-run: [`c8_maxcut_qaoa_p1.py`]
+- Bloch: `c8_maxcut_qaoa_p1.bloch`
+- Python/Qiskit single-run: `c8_maxcut_qaoa_p1.py`
 
 ### Quantum and classical components
 
 The workflow has two coupled parts:
 
 1. Quantum evaluation:
-   For fixed parameters \((\gamma,\beta)\), each toolchain generates a sample histogram from circuit measurements, then computes the expected cut:
-   \[
-   \mathbb{E}[C] = \sum_{z} p(z)\,C(z)
-   \]
+   For fixed parameters `(gamma, beta)`, each toolchain generates a sample histogram from circuit measurements, then computes the expected cut:
+   `E[C] = sum over bitstrings z of p(z) * C(z)`.
 2. Classical optimisation:
-   The runner uses parameter-shift gradients [2,3] with gradient ascent to update \((\gamma,\beta)\):
-   - \(\partial_\gamma F \approx \frac{1}{2}\left[F(\gamma+\pi/2,\beta)-F(\gamma-\pi/2,\beta)\right]\)
-   - \(\partial_\beta F \approx F(\gamma,\beta+\pi/4)-F(\gamma,\beta-\pi/4)\)
+   The runner uses parameter-shift gradients [2,3] with gradient ascent to update `(gamma, beta)`:
+   - `dF/dgamma ~= 0.5 * (F(gamma + pi/2, beta) - F(gamma - pi/2, beta))`
+   - `dF/dbeta  ~=       (F(gamma, beta + pi/4) - F(gamma, beta - pi/4))`
 
-The update rule is:
-\[
-\gamma \leftarrow \gamma + \eta\,\partial_\gamma F,\quad
-\beta \leftarrow \beta + \eta\,\partial_\beta F
-\]
-with learning rate \(\eta=0.12\) by default.
+Update rule:
+- `gamma <- gamma + eta * dF/dgamma`
+- `beta  <- beta  + eta * dF/dbeta`
+
+Default learning rate: `eta = 0.12`.
 
 ### Optimisation schedule and sampling policy
 
@@ -67,7 +64,7 @@ It performs:
 2. One final evaluation at the optimised parameters.
 
 Each optimisation iteration uses parameter-shift, which evaluates the objective 5 times (`F0`, `gamma+`, `gamma-`, `beta+`, `beta-`).  
-Therefore, optimisation uses \(25 \times 5 = 125\) objective evaluations per toolchain, followed by one final post-optimisation evaluation for reporting.
+Therefore, optimisation uses `25 * 5 = 125` objective evaluations per toolchain, followed by one final post-optimisation evaluation for reporting.
 
 By default, both optimisation evaluations and final evaluation use `8192` shots (`EXPERIMENT_SHOTS=8192`) for both toolchains, so the shot budget is matched.
 
@@ -110,7 +107,7 @@ poetry run python run_experiment.py
 ```
 
 This runs Bloch and Qiskit with the same optimisation algorithm and prints:
-- optimised parameters \((\gamma,\beta)\)
+- optimised parameters `(gamma, beta)`
 - optimisation runtime
 - final evaluation runtime
 - final expected cut value
