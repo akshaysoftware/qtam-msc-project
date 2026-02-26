@@ -1,5 +1,8 @@
 // C8 MaxCut with QAOA p=1
-// Graph edges: (0,1),(1,2),...,(6,7),(7,0)
+// Mathematical graph labels:
+// V = {1,2,3,4,5,6,7,8}
+// E = {(1,2),(2,3),...,(7,8),(8,1)}
+// Vertex-to-qubit mapping: vertex v -> q[v-1]
 
 @quantum
 function applyZZCost(qubit a, qubit b, float gamma) -> void {
@@ -22,7 +25,7 @@ function qaoa_p1_c8(qubit[8] q, float gamma, float beta) -> void {
         h(q[i]);
     }
 
-    // Cost layer for C8
+    // Cost layer for C8 using mapping v -> q[v-1]
     applyZZCost(q[0], q[1], gamma);
     applyZZCost(q[1], q[2], gamma);
     applyZZCost(q[2], q[3], gamma);
@@ -42,8 +45,8 @@ function main() -> void {
     // Use @tracked so multi-shot runs produce a histogram automatically.
     @tracked qubit[8] qreg;
 
-    final float gamma = 0.7f;
-    final float beta  = 0.3f;
+    final float gamma = 0.702036f;
+    final float beta  = 0.300483f;
 
     qaoa_p1_c8(qreg, gamma, beta);
 

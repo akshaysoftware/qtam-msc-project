@@ -6,15 +6,18 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Statevector
 
 N = 8
-EDGES: List[Tuple[int, int]] = [
-    (0, 1),
+# Graph is expressed in 1-based labels:
+# V = {1,2,...,8}, E = {(1,2),(2,3),...,(7,8),(8,1)}
+VERTICES: List[int] = list(range(1, N + 1))
+EDGES_1BASED: List[Tuple[int, int]] = [
     (1, 2),
     (2, 3),
     (3, 4),
     (4, 5),
     (5, 6),
     (6, 7),
-    (7, 0),
+    (7, 8),
+    (8, 1),
 ]
 
 GAMMA = float(os.environ.get("QAOA_GAMMA", "0.7"))
@@ -26,16 +29,18 @@ SEED = int(os.environ.get("QAOA_SEED", "1234"))
 def qiskit_counts_for_params(gamma: float, beta: float, shots: int, seed: int) -> Dict[str, int]:
     qc = QuantumCircuit(N)
 
-    for i in range(N):
-        qc.h(i)
+    for vertex in VERTICES:
+        qc.h(vertex - 1)
 
-    for (i, j) in EDGES:
-        qc.cx(i, j)
-        qc.rz(-gamma, j)
-        qc.cx(i, j)
+    for (u, v) in EDGES_1BASED:
+        qu_u = u - 1
+        qu_v = v - 1
+        qc.cx(qu_u, qu_v)
+        qc.rz(-gamma, qu_v)
+        qc.cx(qu_u, qu_v)
 
-    for i in range(N):
-        qc.rx(2.0 * beta, i)
+    for vertex in VERTICES:
+        qc.rx(2.0 * beta, vertex - 1)
 
     sv = Statevector.from_instruction(qc)
     probs = np.abs(sv.data) ** 2

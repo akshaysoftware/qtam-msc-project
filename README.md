@@ -20,8 +20,12 @@ Given a graph `G=(V,E)`, MaxCut asks for a bit assignment `z in {0,1}^|V|` that 
 
 where `XOR` is exclusive-or.
 
-Here, `G` is `C8` with edges:
-`(0,1), (1,2), (2,3), (3,4), (4,5), (5,6), (6,7), (7,0)`.
+Here, `G` is `C8` with:
+- `V = {1,2,3,4,5,6,7,8}`
+- `E = {(1,2), (2,3), (3,4), (4,5), (5,6), (6,7), (7,8), (8,1)}`
+
+Implementation mapping:
+- vertex `v` is mapped to qubit index `v-1` (so vertex 1 maps to `q[0]`, vertex 8 maps to `q[7]`).
 
 ### QAOA ansatz used in this project
 
