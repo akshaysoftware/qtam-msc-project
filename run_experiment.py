@@ -33,7 +33,7 @@ class OptConfig:
     gamma0: float = float(os.environ.get("OPT_GAMMA0", "0.7"))
     beta0: float = float(os.environ.get("OPT_BETA0", "0.3"))
     shift_gamma: float = math.pi / 2
-    shift_beta: float = math.pi / 4  # RX(2 * beta)
+    shift_beta: float = math.pi / 2  # RX(2 * beta) = exp(-i * beta * X)
 
 
 @dataclass
@@ -213,7 +213,7 @@ def parameter_shift_step(
 
     f_bp = eval_f(gamma, beta + cfg.shift_beta, seed(3))
     f_bm = eval_f(gamma, beta - cfg.shift_beta, seed(4))
-    dbeta = f_bp - f_bm
+    dbeta = 0.5 * (f_bp - f_bm)
     return f0, dgamma, dbeta
 
 

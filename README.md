@@ -48,7 +48,7 @@ The workflow has two coupled parts:
 2. Classical optimisation:
    The runner uses parameter-shift gradients [2,3] with gradient ascent to update `(gamma, beta)`:
    - `dF/dgamma ~= 0.5 * (F(gamma + pi/2, beta) - F(gamma - pi/2, beta))`
-   - `dF/dbeta  ~=       (F(gamma, beta + pi/4) - F(gamma, beta - pi/4))`
+   - `dF/dbeta  ~= 0.5 * (F(gamma, beta + pi/2) - F(gamma, beta - pi/2))`
 
 Update rule:
 - `gamma <- gamma + eta * dF/dgamma`
