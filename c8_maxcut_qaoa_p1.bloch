@@ -1,0 +1,57 @@
+// C8 MaxCut with QAOA p=1
+// Graph edges: (0,1),(1,2),...,(6,7),(7,0)
+
+@quantum
+function applyZZCost(qubit a, qubit b, float gamma) -> void {
+    // Implements exp(i * 0.5 * gamma * Z_a Z_b) up to a global phase convention
+    cx(a, b);
+    rz(b, -gamma);
+    cx(a, b);
+}
+
+@quantum
+function applyMixerX(qubit q, float beta) -> void {
+    // Implements exp(-i * beta * X) up to a global phase convention
+    rx(q, 2.0f * beta);
+}
+
+@quantum
+function qaoa_p1_c8(qubit[8] q, float gamma, float beta) -> void {
+    // |+>^n
+    for (int i = 0; i < 8; i++) {
+        h(q[i]);
+    }
+
+    // Cost layer for C8
+    applyZZCost(q[0], q[1], gamma);
+    applyZZCost(q[1], q[2], gamma);
+    applyZZCost(q[2], q[3], gamma);
+    applyZZCost(q[3], q[4], gamma);
+    applyZZCost(q[4], q[5], gamma);
+    applyZZCost(q[5], q[6], gamma);
+    applyZZCost(q[6], q[7], gamma);
+    applyZZCost(q[7], q[0], gamma);
+
+    // Mixer layer
+    for (int i = 0; i < 8; i++) {
+        applyMixerX(q[i], beta);
+    }
+}
+
+function main() -> void {
+    // Use @tracked so multi-shot runs produce a histogram automatically.
+    @tracked qubit[8] qreg;
+
+    final float gamma = 0.7f;
+    final float beta  = 0.3f;
+
+    qaoa_p1_c8(qreg, gamma, beta);
+
+    // Measure into a bit array so single-shot runs can echo the assignment too.
+    bit[8] out = {
+        measure qreg[0], measure qreg[1], measure qreg[2], measure qreg[3],
+        measure qreg[4], measure qreg[5], measure qreg[6], measure qreg[7]
+    };
+
+    echo(out);
+}

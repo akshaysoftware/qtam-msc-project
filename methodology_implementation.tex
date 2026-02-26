@@ -1,0 +1,152 @@
+% If your main document uses the article class, replace \chapter with \section.
+\chapter{Methodology and Implementation}
+\label{chap:methodology_implementation}
+
+This chapter combines the methodological design and the concrete software realization of our benchmark.
+The central objective is to compare two quantum toolchains (Bloch and Qiskit) under a matched QAOA workflow:
+identical problem instance, identical circuit ansatz, identical classical optimization routine, and identical shot budgets.
+
+\section{Problem Setup}
+\label{sec:problem_setup}
+
+We study the MaxCut problem on the 8-node cycle graph \(C_8\), with vertex set
+\(V = \{0,\dots,7\}\) and edge set
+\[
+E = \{(0,1),(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,0)\}.
+\]
+For a bitstring \(z \in \{0,1\}^{8}\), the cut value is
+\[
+C(z) = \sum_{(i,j)\in E} (z_i \oplus z_j),
+\]
+where \(\oplus\) denotes XOR.
+The optimization objective is to maximize the expected cut value under a parameterized quantum state.
+
+\section{QAOA Formulation}
+\label{sec:qaoa_formulation}
+
+We use depth \(p=1\) QAOA, following the standard construction introduced by Farhi, Goldstone, and Gutmann (2014).
+Two real parameters are optimized:
+\[
+\gamma \in \mathbb{R}, \quad \beta \in \mathbb{R}.
+\]
+
+\subsection{Quantum State Preparation and Cost/Mixer Layers}
+
+For \(n=8\) qubits, each evaluation performs:
+\begin{enumerate}
+    \item Initialize \(\ket{+}^{\otimes n}\) with Hadamard gates on all qubits.
+    \item Apply a cost unitary for every edge \((i,j)\in E\), implemented as
+    \[
+    \mathrm{CX}(i,j)\;\rightarrow\; \mathrm{RZ}_j(-\gamma)\;\rightarrow\; \mathrm{CX}(i,j).
+    \]
+    \item Apply mixer rotations on all qubits:
+    \[
+    \mathrm{RX}(2\beta).
+    \]
+    \item Measure all qubits in the computational basis.
+\end{enumerate}
+
+This gate sequence is identical in Bloch and Qiskit implementations.
+
+\subsection{Objective Estimation from Samples}
+
+Given measurement counts at parameters \((\gamma,\beta)\), the empirical probability of bitstring \(z\) is
+\[
+\hat{p}_{\gamma,\beta}(z)=\frac{\mathrm{counts}(z)}{S},
+\]
+where \(S\) is the number of shots.
+The empirical objective is
+\[
+\hat{F}(\gamma,\beta)=\sum_{z\in\{0,1\}^{8}} \hat{p}_{\gamma,\beta}(z)\, C(z).
+\]
+In this project, default shot count is \(S=8192\) for both toolchains.
+
+\section{Classical Optimization Strategy}
+\label{sec:classical_optimization}
+
+The classical optimizer is gradient ascent using parameter-shift evaluations.
+For one iteration at current \((\gamma,\beta)\):
+\begin{align}
+\frac{\partial \hat{F}}{\partial \gamma}
+&\approx \frac{1}{2}\left[\hat{F}\!\left(\gamma+\frac{\pi}{2},\beta\right)-\hat{F}\!\left(\gamma-\frac{\pi}{2},\beta\right)\right], \\
+\frac{\partial \hat{F}}{\partial \beta}
+&\approx \hat{F}\!\left(\gamma,\beta+\frac{\pi}{4}\right)-\hat{F}\!\left(\gamma,\beta-\frac{\pi}{4}\right).
+\end{align}
+
+Parameters are updated as
+\begin{align}
+\gamma &\leftarrow \gamma + \eta \frac{\partial \hat{F}}{\partial \gamma}, \\
+\beta  &\leftarrow \beta  + \eta \frac{\partial \hat{F}}{\partial \beta},
+\end{align}
+with learning rate \(\eta=0.12\) in the default configuration.
+
+Each optimization iteration requires five objective evaluations:
+\[
+\hat{F}(\gamma,\beta),\;
+\hat{F}\!\left(\gamma+\frac{\pi}{2},\beta\right),\;
+\hat{F}\!\left(\gamma-\frac{\pi}{2},\beta\right),\;
+\hat{F}\!\left(\gamma,\beta+\frac{\pi}{4}\right),\;
+\hat{F}\!\left(\gamma,\beta-\frac{\pi}{4}\right).
+\]
+With 25 iterations, this is \(25\times 5=125\) evaluations per toolchain, followed by one final post-optimization evaluation.
+
+\section{Implementation Architecture}
+\label{sec:implementation_architecture}
+
+The repository is intentionally split into three executable artifacts:
+\begin{enumerate}
+    \item \texttt{c8\_maxcut\_qaoa\_p1.bloch}: standalone Bloch circuit with fixed \((\gamma,\beta)\), producing a histogram without optimization.
+    \item \texttt{c8\_maxcut\_qaoa\_p1.py}: standalone Python/Qiskit circuit with fixed \((\gamma,\beta)\), producing a histogram without optimization.
+    \item \texttt{run\_experiment.py}: complete cross-toolchain experiment runner containing
+    all optimization and evaluation logic for both Bloch and Qiskit.
+\end{enumerate}
+
+\subsection{Single-Run Scripts}
+
+Both single-run scripts are used as direct sanity checks:
+\begin{itemize}
+    \item Bloch command: \texttt{bloch c8\_maxcut\_qaoa\_p1.bloch --shots=8192}
+    \item Python command: \texttt{poetry run python c8\_maxcut\_qaoa\_p1.py}
+\end{itemize}
+These scripts avoid optimizer-side effects and expose only the measurement distribution for fixed parameters.
+
+\subsection{Runner Workflow}
+
+\texttt{run\_experiment.py} executes the following steps:
+\begin{enumerate}
+    \item Configure hyperparameters (defaults: 25 iterations, 8192 shots, \(\eta=0.12\), \(\gamma_0=0.7\), \(\beta_0=0.3\)).
+    \item Optimize Bloch parameters with parameter-shift gradient ascent.
+    \item Optimize Qiskit parameters with the same routine.
+    \item Perform final evaluation for each toolchain at its optimized parameters.
+    \item Report matched metrics:
+    optimized \((\gamma,\beta)\), optimization runtime, final evaluation runtime, expected cut value, and outcome histograms.
+\end{enumerate}
+
+\subsection{Toolchain-Specific Evaluation Details}
+
+\begin{itemize}
+    \item \textbf{Bloch path:} the runner updates \((\gamma,\beta)\) literals in the Bloch source, executes the CLI, and parses histogram rows from standard output.
+    \item \textbf{Qiskit path:} the runner constructs the same circuit in Python, computes exact statevector probabilities, and samples outcomes using NumPy RNG with explicit seeds.
+\end{itemize}
+
+This asymmetry is implementation-level (CLI sampling versus local statevector sampling), but circuit semantics and optimizer protocol are matched.
+
+\section{Reproducibility and Fairness Controls}
+\label{sec:reproducibility_fairness}
+
+To preserve comparability:
+\begin{itemize}
+    \item identical graph instance and edge ordering are used in both toolchains;
+    \item identical ansatz structure and gate sequence are enforced;
+    \item identical optimizer hyperparameters are used in the shared runner;
+    \item identical shot count (\(8192\) by default) is used for both toolchains;
+    \item deterministic seed handling is used for Qiskit sampling in optimization and final evaluation.
+\end{itemize}
+
+The runner also restores the original Bloch source after execution, so fixed-parameter standalone runs remain stable and repeatable.
+
+\section{Summary}
+\label{sec:method_impl_summary}
+
+By unifying methodological assumptions and implementation details in one chapter, the benchmark design becomes explicit and auditable.
+The chapter demonstrates that the comparison is not between different algorithms, but between two realizations of the same QAOA procedure under a shared optimization protocol.

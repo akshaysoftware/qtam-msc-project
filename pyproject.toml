@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "qtam-project"
+version = "0.1.0"
+description = "Comparison of Bloch and Qiskit on a benchmark QAOA problem"
+authors = ["Akshay"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+qiskit = "2.2.3"
+
+[build-system]
+requires = ["poetry-core>=1.8.0"]
+build-backend = "poetry.core.masonry.api"
