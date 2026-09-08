@@ -80,8 +80,11 @@ By default, both optimisation evaluations and final evaluation use `8192` shots 
 2. Poetry
 3. Bloch CLI on `PATH` (binary name `bloch`)
 
-Bloch installation reference:
-- <https://github.com/bloch-labs/basis>
+This experiment was conducted using the original Bloch compiler.
+The implementation is available in
+[`bloch-labs/bloch-legacy`](https://github.com/bloch-labs/bloch-legacy).
+
+> Tested against tag `v1.0.3`
 
 ### Installation
 
