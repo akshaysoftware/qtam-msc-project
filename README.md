@@ -62,7 +62,7 @@ Default learning rate: `eta = 0.12`.
 
 ### Optimisation schedule and sampling policy
 
-The experiment runner is [`run_experiment.py`](/home/akshay/documents/msc/project/run_experiment.py).  
+The experiment runner is [`run_experiment.py`](./run_experiment.py). 
 It performs:
 1. **25 optimisation iterations** per toolchain (not continuous optimisation during every script output stage).
 2. One final evaluation at the optimised parameters.
