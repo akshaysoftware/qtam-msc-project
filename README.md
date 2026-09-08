@@ -86,6 +86,9 @@ The implementation is available in
 
 > Tested against tag `v1.0.3`
 
+Active development of the language continues at
+[Bloch Basis](https://github.com/bloch-labs/basis).
+
 ### Installation
 
 ```bash
