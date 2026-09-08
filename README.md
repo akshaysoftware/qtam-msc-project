@@ -81,7 +81,7 @@ By default, both optimisation evaluations and final evaluation use `8192` shots 
 3. Bloch CLI on `PATH` (binary name `bloch`)
 
 Bloch installation reference:
-- <https://docs.bloch-labs.com/bloch/overview/>
+- <https://github.com/bloch-labs/basis>
 
 ### Installation
 
